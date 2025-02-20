@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Typer Game</title>
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            perspective: 1000px;
+        }
+        .game-container {
+            width: 70%;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            transform: rotateY(3deg) scale(1.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .game-container:hover {
+            transform: rotateY(0deg) scale(1.08);
+        }
+        h1 {
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.7);
+        }
+        #word-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.6);
+        }
+        #word-input {
+            font-size: 1.8rem;
+            padding: 12px;
+            border-radius: 15px;
+            border: none;
+            outline: none;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+        }
+        #timer, #score, #level {
+            margin-top: 10px;
+            font-size: 1.5rem;
+        }
+        #status {
+            font-size: 1.8rem;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        #restart-button {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1.5rem;
+            background-color: #ff4c4c;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+            transition: background 0.3s;
+        }
+        #restart-button:hover {
+            background-color: #ff1c1c;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Fast Typer</h1>
+        <p id="level">Level: 1</p>
+        <p id="score">Score: 0</p>
+        <p id="word-display"></p>
+        <input type="text" id="word-input" autofocus>
+        <p id="timer">Time Left: <span id="time">20</span> sec</p>
+        <p id="status"></p>
+        <button id="restart-button" onclick="restartGame()">Restart</button>
+    </div>
+
+    <audio id="correct-sound" src="correct.mp3"></audio>
+    <audio id="wrong-sound" src="wrong.mp3"></audio>
+    <audio id="gameover-sound" src="gameover.mp3"></audio>
+    <audio id="typing-sound" src="typing.mp3"></audio>
+
+    <script>
+        const wordLevels = {
+            1: ["cat", "dog", "sun", "hat", "car"],
+            2: ["apple", "chair", "happy", "smile", "piano"],
+            3: ["banana", "guitar", "picture", "puzzle", "sunset"],
+            4: ["elephant", "backpack", "mountain", "umbrella", "adventure"],
+            5: ["astronaut", "butterfly", "championship", "dictionary", "universe"],
+            6: ["galaxy", "horizon", "landscape", "tornado", "wildlife"],
+            7: ["consequence", "exaggeration", "phenomenon", "complicated", "determination"],
+            8: ["responsibility", "sophisticated", "unbelievable", "misunderstanding", "revolutionary"],
+            9: ["psychology", "encyclopedia", "philosopher", "anthropology", "bureaucracy"],
+            10: ["incomprehensible", "uncharacteristically", "miscommunication", "institutionalization", "counterproductive"]
+        };
+        let timeLeft = 20;
+        let timerInterval;
+        let currentWord;
+        let statusTimeout;
+        let score = 0;
+        let level = 1;
+
+        function startGame() {
+            setNewWord();
+            resetTimer();
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 20;
+            document.getElementById("time").textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("time").textContent = timeLeft;
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function setNewWord() {
+            let words = wordLevels[level] || wordLevels[10];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            document.getElementById("word-display").textContent = currentWord;
+            document.getElementById("word-input").value = "";
+            document.getElementById("status").textContent = "";
+        }
+
+        function updateScore() {
+            score += 10;
+            document.getElementById("score").textContent = "Score: " + score;
+            if (score % 50 === 0 && level < 10) {
+                level++;
+                document.getElementById("level").textContent = "Level: " + level;
+            }
+        }
+
+        function gameOver() {
+            document.getElementById("status").textContent = "Game Over";
+            document.getElementById("status").style.color = "red";
+            document.getElementById("word-input").disabled = true;
+            document.getElementById("restart-button").style.display = "inline-block";
+            document.getElementById("gameover-sound").play();
+        }
+
+        function restartGame() {
+            score = 0;
+            level = 1;
+            document.getElementById("score").textContent = "Score: 0";
+            document.getElementById("level").textContent = "Level: 1";
+            document.getElementById("word-input").disabled = false;
+            document.getElementById("restart-button").style.display = "none";
+            startGame();
+        }
+
+        document.getElementById("word-input").addEventListener("input", function(event) {
+            clearTimeout(statusTimeout);
+            document.getElementById("typing-sound").play();
+            let inputText = this.value.toLowerCase();
+            if (currentWord.startsWith(inputText)) {
+                document.getElementById("status").textContent = "";
+            } else {
+                document.getElementById("status").textContent = "You typed wrong";
+                document.getElementById("status").style.color = "red";
+                document.getElementById("wrong-sound").play();
+            }
+            if (inputText === currentWord) {
+                document.getElementById("status").textContent = "Correct";
+                document.getElementById("status").style.color = "green";
+                document.getElementById("correct-sound").play();
+                updateScore();
+                setNewWord();
+                resetTimer();
+            }
+        });
+
+        startGame();
+    </script>
+</body>
+</html>
